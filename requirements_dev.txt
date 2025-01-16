@@ -25,6 +25,8 @@ click==8.1.8
     #   black
     #   pip-tools
     #   pur
+coverage[toml]==7.6.10
+    # via pytest-cov
 cyclonedx-python-lib==7.6.2
     # via pip-audit
 defusedxml==0.7.1
@@ -103,6 +105,8 @@ pyproject-hooks==1.2.0
     #   build
     #   pip-tools
 pytest==8.3.4
+    # via pytest-cov
+pytest-cov==6.0.0
     # via -r requirements_dev.in
 requests==2.32.3
     # via

@@ -6,4 +6,4 @@ pep8-naming
 pip-audit
 pip-tools
 pur
-pytest
+pytest-cov
