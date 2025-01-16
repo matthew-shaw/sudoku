@@ -1,7 +1,7 @@
 import random
 from typing import List, Optional
 
-N = 9  # Board size
+N = 9  # Size of the Sudoku board (9x9)
 
 
 def print_board(board: List[List[int]]) -> None:
@@ -21,7 +21,7 @@ def print_board(board: List[List[int]]) -> None:
 
 
 def is_valid(board: List[List[int]], row: int, col: int, num: int) -> bool:
-    """Checks if placing 'num' at (row, col) is valid using sets for efficiency.
+    """Efficiently checks if placing 'num' at (row, col) is valid in the Sudoku board. Uses sets for speed.
 
     Args:
         board: The Sudoku board.
@@ -30,15 +30,16 @@ def is_valid(board: List[List[int]], row: int, col: int, num: int) -> bool:
         num: The number to check (1-9).
 
     Returns:
-        True if placing 'num' at (row, col) is valid, False otherwise.
+        True if the placement is valid, False otherwise.
     """
-    row_set: set[int] = set(board[row])  # Create a set of numbers in the row
-    col_set: set[int] = {board[i][col] for i in range(N)}  # Create a set of numbers in the column
-    subgrid_row: int = (row // 3) * 3  # Calculate subgrid starting row
-    subgrid_col: int = (col // 3) * 3  # Calculate subgrid starting column
+    row_set: set[int] = set(board[row])  # Numbers in the current row
+    col_set: set[int] = {board[i][col] for i in range(N)}  # Numbers in the current column
+    subgrid_row: int = (row // 3) * 3  # Starting row index of the 3x3 subgrid
+    subgrid_col: int = (col // 3) * 3  # Starting column index of the 3x3 subgrid
     subgrid_set: set[int] = {
         board[subgrid_row + i][subgrid_col + j] for i in range(3) for j in range(3)
-    }  # Create a set of numbers in the 3x3 subgrid
+    }  # Numbers in the 3x3 subgrid
+
     return num not in row_set and num not in col_set and num not in subgrid_set
 
 
@@ -57,10 +58,11 @@ def solve(board: List[List[int]]) -> bool:
                 for num in range(1, 10):
                     if is_valid(board, row, col, num):
                         board[row][col] = num
-                        if solve(board):  # Recursive call to solve the rest
+                        if solve(board):  # Recursive call to solve the rest of the puzzle
                             return True
-                        board[row][col] = 0  # Backtrack if the current number doesn't lead to a solution
+                        board[row][col] = 0  # Backtrack: If this number doesn't lead to a solution, remove it
                 return False  # No valid number found for this cell
+
     return True  # Puzzle solved
 
 
@@ -68,34 +70,33 @@ def generate_sudoku(difficulty: int = 40) -> Optional[List[List[int]]]:
     """Generates a Sudoku puzzle of the specified difficulty (number of empty cells).
 
     Args:
-        difficulty: The desired number of empty cells (default is 40). Higher values mean easier puzzles.
+        difficulty: The desired number of empty cells (default is 40). Higher values result in easier puzzles.
 
     Returns:
-        A list of lists representing the Sudoku puzzle, or None if a puzzle cannot be generated
-        at the specified difficulty.
+        A list of lists representing the Sudoku puzzle, or None if a puzzle cannot be generated at the specified difficulty.
     """
     board: List[List[int]] = [[0] * N for _ in range(N)]  # Initialize an empty 9x9 board
 
-    # Fill diagonal blocks for a faster, valid starting point
+    # Fill diagonal blocks for a faster, valid starting point.  These blocks are independent.
     for i in range(0, N, 3):
-        nums: list[int] = list(range(1, 10))  # List of numbers 1-9
+        nums: list[int] = list(range(1, 10))  # Create a list of numbers from 1 to 9
         random.shuffle(nums)  # Shuffle the numbers randomly
         for r in range(3):
             for c in range(3):
-                board[i + r][i + c] = nums.pop()  # Fill the diagonal blocks
+                board[i + r][i + c] = nums.pop()  # Fill the diagonal blocks with shuffled numbers
 
     if not solve(board):  # Check if a solution exists after pre-filling
         return None  # Could not generate a puzzle
 
-    # Remove numbers to create the puzzle. More efficient removal.
-    empty_cells: int = 81 - difficulty  # Number of empty cells to create
-    removed_cells: int = 0  # Counter for the number of cells removed
+    # Remove numbers to create the puzzle.  Efficiently removes only filled cells.
+    empty_cells: int = 81 - difficulty  # Calculate the number of empty cells needed
+    removed_cells: int = 0  # Initialize a counter for removed cells
     while removed_cells < empty_cells:
-        row: int = random.randint(0, N - 1)  # Randomly select a row
-        col: int = random.randint(0, N - 1)  # Randomly select a column
+        row: int = random.randint(0, N - 1)  # Generate random row index
+        col: int = random.randint(0, N - 1)  # Generate random column index
         if board[row][col] != 0:  # Check if the cell is not already empty
             board[row][col] = 0  # Empty the cell
-            removed_cells += 1  # Increment the counter
+            removed_cells += 1  # Increment the counter for removed cells
 
     return board
 
