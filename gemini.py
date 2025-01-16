@@ -1,90 +1,78 @@
 import random
+from typing import List, Optional
+
+N = 9  # Board size
 
 
-def is_valid(grid: list[list[int]], row: int, col: int, num: int) -> bool:
-    """Checks if placing 'num' at (row, col) is valid in the Sudoku grid."""
-    # Check row
-    if num in grid[row]:
-        return False
-
-    # Check column
-    if num in [grid[i][col] for i in range(9)]:
-        return False
-
-    # Check 3x3 box
-    start_row = row - row % 3
-    start_col = col - col % 3
-    for i in range(3):
-        for j in range(3):
-            if grid[i + start_row][j + start_col] == num:
-                return False
-    return True
-
-
-def solve_sudoku(grid: list[list[int]]) -> bool:
-    """Solves a Sudoku puzzle using backtracking."""
-    for row in range(9):
-        for col in range(9):
-            if grid[row][col] == 0:
-                for num in range(1, 10):
-                    if is_valid(grid, row, col, num):
-                        grid[row][col] = num
-                        if solve_sudoku(grid):  # Recursive call
-                            return True
-                        grid[row][col] = 0  # Backtrack
-                return False  # No solution found
-    return True  # Puzzle is filled
-
-
-def generate_sudoku(difficulty: int = 30) -> list[list[int]]:
-    """Generates a Sudoku puzzle with a given difficulty (number of empty cells)."""
-
-    # Create a solved Sudoku grid
-    grid: list[list[int]] = [[0 for _ in range(9)] for _ in range(9)]
-    # Fill the diagonal boxes to start with a valid grid that is easier to solve
-    for i in range(0, 9, 3):
-        numbers = list(range(1, 10))
-        random.shuffle(numbers)
-        for j in range(3):
-            for k in range(3):
-                grid[i + j][i + k] = numbers.pop()
-
-    solve_sudoku(grid)
-
-    # Remove numbers to create the puzzle
-    num_to_remove = 81 - difficulty  # Target number of filled cells
-    while num_to_remove > 0:
-        row = random.randint(0, 8)
-        col = random.randint(0, 8)
-        if grid[row][col] != 0:
-            grid[row][col] = 0
-            num_to_remove -= 1
-
-    return grid
-
-
-def print_grid(grid: list[list[int]]) -> None:
-    """Prints the Sudoku grid in a user-friendly format."""
-    for i in range(9):
+def print_board(board: List[List[int]]) -> None:
+    """Prints the Sudoku board with enhanced formatting."""
+    for i in range(N):
         if i % 3 == 0 and i != 0:
             print("-" * 21)
-        for j in range(9):
+        for j in range(N):
             if j % 3 == 0 and j != 0:
                 print("|", end=" ")
-            print(grid[i][j], end=" ")
+            print(str(board[i][j]) if board[i][j] != 0 else ".", end=" ")
         print()
 
 
-# Example usage:
-puzzle = generate_sudoku(
-    difficulty=30
-)  # Adjust difficulty here. Lower number means more difficult.
-print("Sudoku Puzzle:")
-print_grid(puzzle)
+def is_valid(board: List[List[int]], row: int, col: int, num: int) -> bool:
+    """Checks if placing num at (row, col) is valid using sets for faster lookups."""
+    row_set = set(board[row])
+    col_set = {board[i][col] for i in range(N)}
+    subgrid_row = (row // 3) * 3
+    subgrid_col = (col // 3) * 3
+    subgrid_set = {
+        board[subgrid_row + i][subgrid_col + j] for i in range(3) for j in range(3)
+    }
+    return num not in row_set and num not in col_set and num not in subgrid_set
 
 
-# To check the solution:
-solved_puzzle = [row[:] for row in puzzle]  # Create a copy
-solve_sudoku(solved_puzzle)
-print("\nSolution:")
-print_grid(solved_puzzle)
+def solve(board: List[List[int]]) -> bool:
+    """Solves the Sudoku puzzle using backtracking."""
+    for row in range(N):
+        for col in range(N):
+            if board[row][col] == 0:
+                for num in range(1, 10):
+                    if is_valid(board, row, col, num):
+                        board[row][col] = num
+                        if solve(board):
+                            return True
+                        board[row][col] = 0  # Backtrack
+                return False  # No valid number found for this cell
+    return True  # Puzzle solved
+
+
+def generate_sudoku(difficulty: int = 40) -> Optional[List[List[int]]]:
+    """Generates a Sudoku puzzle with a specified difficulty (number of empty cells)."""
+    board: List[List[int]] = [[0] * N for _ in range(N)]
+
+    # Fill diagonal blocks for a faster, valid starting point
+    for i in range(0, N, 3):
+        nums = list(range(1, 10))
+        random.shuffle(nums)
+        for r in range(3):
+            for c in range(3):
+                board[i + r][i + c] = nums.pop()
+
+    if not solve(board):  # Check if a solution exists
+        return None  # Could not generate a puzzle
+
+    # Remove numbers to create the puzzle. More efficient removal.
+    empty_cells = 81 - difficulty
+    removed_cells = 0
+    while removed_cells < empty_cells:
+        row, col = random.randint(0, N - 1), random.randint(0, N - 1)
+        if board[row][col] != 0:
+            board[row][col] = 0
+            removed_cells += 1
+
+    return board
+
+
+if __name__ == "__main__":
+    board = generate_sudoku()
+    if board:
+        print_board(board)
+    else:
+        print("Could not generate a valid Sudoku puzzle.")
