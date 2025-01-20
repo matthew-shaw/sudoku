@@ -10,6 +10,7 @@
 # 6. generate pytest unit tests
 
 import random
+from typing import List, Optional, Set
 
 # Constants
 GRID_SIZE = 9
@@ -18,18 +19,18 @@ SUBGRID_SIZE = 3
 
 # Helper class for managing the Sudoku board
 class Board:
-    def __init__(self):
-        self.board = [[0] * GRID_SIZE for _ in range(GRID_SIZE)]
-        self.rows = [set() for _ in range(GRID_SIZE)]  # Track numbers in rows
-        self.cols = [set() for _ in range(GRID_SIZE)]  # Track numbers in columns
-        self.boxes = [set() for _ in range(GRID_SIZE)]  # Track numbers in 3x3 boxes
+    def __init__(self) -> None:
+        self.board: List[List[int]] = [[0] * GRID_SIZE for _ in range(GRID_SIZE)]
+        self.rows: List[Set[int]] = [set() for _ in range(GRID_SIZE)]  # Track numbers in rows
+        self.cols: List[Set[int]] = [set() for _ in range(GRID_SIZE)]  # Track numbers in columns
+        self.boxes: List[Set[int]] = [set() for _ in range(GRID_SIZE)]  # Track numbers in 3x3 boxes
 
-    def is_valid(self, row, col, num):
+    def is_valid(self, row: int, col: int, num: int) -> bool:
         """Check if placing `num` at (row, col) is valid."""
         box_index = (row // SUBGRID_SIZE) * SUBGRID_SIZE + (col // SUBGRID_SIZE)
         return num not in self.rows[row] and num not in self.cols[col] and num not in self.boxes[box_index]
 
-    def place_number(self, row, col, num):
+    def place_number(self, row: int, col: int, num: int) -> None:
         """Place `num` at (row, col) and update the constraint sets."""
         self.board[row][col] = num
         self.rows[row].add(num)
@@ -37,7 +38,7 @@ class Board:
         box_index = (row // SUBGRID_SIZE) * SUBGRID_SIZE + (col // SUBGRID_SIZE)
         self.boxes[box_index].add(num)
 
-    def remove_number(self, row, col, num):
+    def remove_number(self, row: int, col: int, num: int) -> None:
         """Remove `num` from (row, col) and update the constraint sets."""
         self.board[row][col] = 0
         self.rows[row].remove(num)
@@ -45,7 +46,7 @@ class Board:
         box_index = (row // SUBGRID_SIZE) * SUBGRID_SIZE + (col // SUBGRID_SIZE)
         self.boxes[box_index].remove(num)
 
-    def print_board(self):
+    def print_board(self) -> None:
         """Print the board in a human-readable format."""
         for row in self.board:
             print(" ".join(str(num) if num != 0 else "." for num in row))
@@ -53,14 +54,14 @@ class Board:
 
 # Sudoku Solver class
 class SudokuSolver:
-    def __init__(self, board):
+    def __init__(self, board: Board) -> None:
         self.board = board
 
-    def solve(self):
+    def solve(self) -> bool:
         """Solve the Sudoku using backtracking with MRV heuristic and forward checking."""
         return self._backtrack()
 
-    def _backtrack(self):
+    def _backtrack(self) -> bool:
         """Perform backtracking to solve the Sudoku."""
         # Use MRV heuristic: Find the cell with the fewest valid options
         min_choices = GRID_SIZE + 1
@@ -83,7 +84,7 @@ class SudokuSolver:
                 self.board.remove_number(row, col, num)
         return False
 
-    def _count_valid_choices(self, row, col):
+    def _count_valid_choices(self, row: int, col: int) -> int:
         """Count valid numbers that can be placed at (row, col)."""
         valid_choices = 0
         for num in range(1, GRID_SIZE + 1):
@@ -94,18 +95,18 @@ class SudokuSolver:
 
 # Sudoku Puzzle Generator class
 class SudokuGenerator:
-    def __init__(self):
+    def __init__(self) -> None:
         self.board = Board()
 
-    def generate_sudoku(self):
+    def generate_sudoku(self) -> None:
         """Generate a solvable Sudoku puzzle."""
         self._fill_board()
         self._remove_cells()
 
-    def _fill_board(self):
+    def _fill_board(self) -> None:
         """Fill the board using backtracking."""
 
-        def backtrack_fill():
+        def backtrack_fill() -> bool:
             for row in range(GRID_SIZE):
                 for col in range(GRID_SIZE):
                     if self.board.board[row][col] == 0:
@@ -121,7 +122,7 @@ class SudokuGenerator:
 
         backtrack_fill()
 
-    def _remove_cells(self):
+    def _remove_cells(self) -> None:
         """Remove random cells to create a solvable puzzle."""
         for _ in range(random.randint(30, 40)):
             row, col = random.randint(0, GRID_SIZE - 1), random.randint(0, GRID_SIZE - 1)
@@ -131,7 +132,7 @@ class SudokuGenerator:
 
 
 # Main function to run the puzzle generation and solving process
-if __name__ == "__main__":
+def main() -> None:
     # Generate a new puzzle
     generator = SudokuGenerator()
     generator.generate_sudoku()
@@ -145,3 +146,7 @@ if __name__ == "__main__":
         generator.board.print_board()
     else:
         print("\nNo solution found.")
+
+
+if __name__ == "__main__":
+    main()
