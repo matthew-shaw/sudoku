@@ -11,114 +11,137 @@
 
 import random
 
+# Constants
+GRID_SIZE = 9
+SUBGRID_SIZE = 3
 
-# Sudoku Solver using Backtracking with optimizations
-class Sudoku:
+
+# Helper class for managing the Sudoku board
+class Board:
     def __init__(self):
-        self.board = [[0] * 9 for _ in range(9)]
-        self.rows = [set() for _ in range(9)]  # Track numbers in rows
-        self.cols = [set() for _ in range(9)]  # Track numbers in columns
-        self.boxes = [set() for _ in range(9)]  # Track numbers in 3x3 boxes
+        self.board = [[0] * GRID_SIZE for _ in range(GRID_SIZE)]
+        self.rows = [set() for _ in range(GRID_SIZE)]  # Track numbers in rows
+        self.cols = [set() for _ in range(GRID_SIZE)]  # Track numbers in columns
+        self.boxes = [set() for _ in range(GRID_SIZE)]  # Track numbers in 3x3 boxes
 
     def is_valid(self, row, col, num):
-        box_index = (row // 3) * 3 + (col // 3)
-        if num in self.rows[row] or num in self.cols[col] or num in self.boxes[box_index]:
-            return False
-        return True
+        """Check if placing `num` at (row, col) is valid."""
+        box_index = (row // SUBGRID_SIZE) * SUBGRID_SIZE + (col // SUBGRID_SIZE)
+        return num not in self.rows[row] and num not in self.cols[col] and num not in self.boxes[box_index]
 
     def place_number(self, row, col, num):
+        """Place `num` at (row, col) and update the constraint sets."""
         self.board[row][col] = num
         self.rows[row].add(num)
         self.cols[col].add(num)
-        box_index = (row // 3) * 3 + (col // 3)
+        box_index = (row // SUBGRID_SIZE) * SUBGRID_SIZE + (col // SUBGRID_SIZE)
         self.boxes[box_index].add(num)
 
     def remove_number(self, row, col, num):
+        """Remove `num` from (row, col) and update the constraint sets."""
         self.board[row][col] = 0
         self.rows[row].remove(num)
         self.cols[col].remove(num)
-        box_index = (row // 3) * 3 + (col // 3)
+        box_index = (row // SUBGRID_SIZE) * SUBGRID_SIZE + (col // SUBGRID_SIZE)
         self.boxes[box_index].remove(num)
 
+    def print_board(self):
+        """Print the board in a human-readable format."""
+        for row in self.board:
+            print(" ".join(str(num) if num != 0 else "." for num in row))
+
+
+# Sudoku Solver class
+class SudokuSolver:
+    def __init__(self, board):
+        self.board = board
+
     def solve(self):
-        # Use a more efficient backtracking algorithm with forward checking and heuristics
-        def backtrack():
-            # Find the next empty cell
-            min_choices = 10
-            row, col = -1, -1
-            for r in range(9):
-                for c in range(9):
-                    if self.board[r][c] == 0:
-                        # Count the valid numbers we can place
-                        valid_choices = 0
-                        box_index = (r // 3) * 3 + (c // 3)
-                        for num in range(1, 10):
-                            if num not in self.rows[r] and num not in self.cols[c] and num not in self.boxes[box_index]:
-                                valid_choices += 1
-                        # Use MRV heuristic: choose the cell with the fewest valid choices
-                        if valid_choices < min_choices:
-                            min_choices = valid_choices
-                            row, col = r, c
-            if row == -1:  # If no empty cells are left, puzzle is solved
-                return True
+        """Solve the Sudoku using backtracking with MRV heuristic and forward checking."""
+        return self._backtrack()
 
-            # Try each number for the empty cell
-            for num in range(1, 10):
-                if self.is_valid(row, col, num):
-                    self.place_number(row, col, num)
-                    if backtrack():
-                        return True
-                    self.remove_number(row, col, num)
-            return False
+    def _backtrack(self):
+        """Perform backtracking to solve the Sudoku."""
+        # Use MRV heuristic: Find the cell with the fewest valid options
+        min_choices = GRID_SIZE + 1
+        row, col = -1, -1
+        for r in range(GRID_SIZE):
+            for c in range(GRID_SIZE):
+                if self.board.board[r][c] == 0:
+                    valid_choices = self._count_valid_choices(r, c)
+                    if valid_choices < min_choices:
+                        min_choices = valid_choices
+                        row, col = r, c
+        if row == -1:  # Puzzle is solved
+            return True
 
-        return backtrack()
+        for num in range(1, GRID_SIZE + 1):
+            if self.board.is_valid(row, col, num):
+                self.board.place_number(row, col, num)
+                if self._backtrack():
+                    return True
+                self.board.remove_number(row, col, num)
+        return False
+
+    def _count_valid_choices(self, row, col):
+        """Count valid numbers that can be placed at (row, col)."""
+        valid_choices = 0
+        for num in range(1, GRID_SIZE + 1):
+            if self.board.is_valid(row, col, num):
+                valid_choices += 1
+        return valid_choices
+
+
+# Sudoku Puzzle Generator class
+class SudokuGenerator:
+    def __init__(self):
+        self.board = Board()
 
     def generate_sudoku(self):
-        # Fill the board using backtracking first
+        """Generate a solvable Sudoku puzzle."""
         self._fill_board()
-        # Remove random cells to create a puzzle
         self._remove_cells()
 
     def _fill_board(self):
+        """Fill the board using backtracking."""
+
         def backtrack_fill():
-            # Find an empty cell
-            for row in range(9):
-                for col in range(9):
-                    if self.board[row][col] == 0:
-                        random.shuffle(range(1, 10))  # Randomize order to avoid patterns
-                        for num in range(1, 10):
-                            if self.is_valid(row, col, num):
-                                self.place_number(row, col, num)
+            for row in range(GRID_SIZE):
+                for col in range(GRID_SIZE):
+                    if self.board.board[row][col] == 0:
+                        random.shuffle(range(1, GRID_SIZE + 1))  # Randomize order to avoid patterns
+                        for num in range(1, GRID_SIZE + 1):
+                            if self.board.is_valid(row, col, num):
+                                self.board.place_number(row, col, num)
                                 if backtrack_fill():
                                     return True
-                                self.remove_number(row, col, num)
+                                self.board.remove_number(row, col, num)
                         return False
             return True
 
         backtrack_fill()
 
     def _remove_cells(self):
-        # Remove random cells to create a solvable puzzle
+        """Remove random cells to create a solvable puzzle."""
         for _ in range(random.randint(30, 40)):
-            row, col = random.randint(0, 8), random.randint(0, 8)
-            while self.board[row][col] == 0:
-                row, col = random.randint(0, 8), random.randint(0, 8)
-            self.board[row][col] = 0
-
-    def print_board(self):
-        for row in self.board:
-            print(" ".join(str(num) if num != 0 else "." for num in row))
+            row, col = random.randint(0, GRID_SIZE - 1), random.randint(0, GRID_SIZE - 1)
+            while self.board.board[row][col] == 0:
+                row, col = random.randint(0, GRID_SIZE - 1), random.randint(0, GRID_SIZE - 1)
+            self.board.board[row][col] = 0
 
 
+# Main function to run the puzzle generation and solving process
 if __name__ == "__main__":
-    sudoku = Sudoku()
-    sudoku.generate_sudoku()
-
+    # Generate a new puzzle
+    generator = SudokuGenerator()
+    generator.generate_sudoku()
     print("Generated Sudoku Puzzle:")
-    sudoku.print_board()
+    generator.board.print_board()
 
-    if sudoku.solve():
+    # Solve the puzzle
+    solver = SudokuSolver(generator.board)
+    if solver.solve():
         print("\nSolved Sudoku Puzzle:")
-        sudoku.print_board()
+        generator.board.print_board()
     else:
         print("\nNo solution found.")
